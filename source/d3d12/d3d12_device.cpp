@@ -58,21 +58,21 @@ bool D3D12Device::check_and_upgrade_interface(REFIID riid)
 		return true;
 
 	static constexpr IID iid_lookup[] = {
-		__uuidof(ID3D12Device),
-		__uuidof(ID3D12Device1),
-		__uuidof(ID3D12Device2),
-		__uuidof(ID3D12Device3),
-		__uuidof(ID3D12Device4),
-		__uuidof(ID3D12Device5),
-		__uuidof(ID3D12Device6),
-		__uuidof(ID3D12Device7),
-		__uuidof(ID3D12Device8),
-		__uuidof(ID3D12Device9),
-		__uuidof(ID3D12Device10),
-		__uuidof(ID3D12Device11),
-		__uuidof(ID3D12Device12),
-		__uuidof(ID3D12Device13),
-		__uuidof(ID3D12Device14),
+		__uuidof(ID3D12Device),   // {189819F1-1DB6-4B57-BE54-1821339B85F7}
+		__uuidof(ID3D12Device1),  // {77ACCE80-638E-4E65-8895-C1F23386863E}
+		__uuidof(ID3D12Device2),  // {30BAA41E-B15B-475C-A0BB-1AF5C5B64328}
+		__uuidof(ID3D12Device3),  // {81DADC15-2BAD-4392-93C5-101345C4AA98}
+		__uuidof(ID3D12Device4),  // {E865DF17-A9EE-46F9-A463-3098315AA2E5}
+		__uuidof(ID3D12Device5),  // {8B4F173B-2FEA-4B80-8F58-4307191AB95D}
+		__uuidof(ID3D12Device6),  // {C70B221B-40E4-4A17-89AF-025A0727A6DC}
+		__uuidof(ID3D12Device7),  // {5C014B53-68A1-4B9B-8BD1-DD6046B9358B}
+		__uuidof(ID3D12Device8),  // {9218E6BB-F944-4F7E-A75C-B1B2C7B701F3}
+		__uuidof(ID3D12Device9),  // {4C80E962-F032-4F60-BC9E-EBC2CFA1D83C}
+		__uuidof(ID3D12Device10), // {517F8718-AA66-49F9-B02B-A7AB89C06031}
+		__uuidof(ID3D12Device11), // {5405C344-D457-444E-B4DD-2366E45AEE39}
+		__uuidof(ID3D12Device12), // {5AF5C532-4C91-4CD0-B541-15A405395FC5}
+		__uuidof(ID3D12Device13), // {14EECFFC-4DF8-40F7-A118-5C816F45695E}
+		__uuidof(ID3D12Device14), // {5F6E592D-D895-44C2-8E4A-88AD4926D323}
 	};
 
 	for (unsigned short version = 0; version < ARRAYSIZE(iid_lookup); ++version)
@@ -121,11 +121,15 @@ HRESULT STDMETHODCALLTYPE D3D12Device::QueryInterface(REFIID riid, void **ppvObj
 	}
 
 	// Special case for d3d12on7
-	if (riid == __uuidof(ID3D12DeviceDownlevel))
+	if (riid == __uuidof(ID3D12DeviceDownlevel)) // {74EAEE3F-2F4B-476D-82BA-2B85CB49E310}
 	{
-		if (ID3D12DeviceDownlevel *downlevel = nullptr; // Not a 'com_ptr' since D3D12DeviceDownlevel will take ownership
-			_downlevel == nullptr && SUCCEEDED(_orig->QueryInterface(&downlevel)))
-			_downlevel = new D3D12DeviceDownlevel(this, downlevel);
+		if (_downlevel == nullptr)
+		{
+			// Not a 'com_ptr' since D3D12DeviceDownlevel will take ownership
+			ID3D12DeviceDownlevel *downlevel = nullptr;
+			if (SUCCEEDED(_orig->QueryInterface(&downlevel)))
+				_downlevel = new D3D12DeviceDownlevel(this, downlevel);
+		}
 
 		if (_downlevel != nullptr)
 			return _downlevel->QueryInterface(riid, ppvObj);
@@ -145,13 +149,13 @@ ULONG   STDMETHODCALLTYPE D3D12Device::AddRef()
 	const std::unique_lock<std::shared_mutex> lock(g_adapter_mutex);
 
 	_orig->AddRef();
-	return (++_ref);
+	return InterlockedIncrement(&_ref);
 }
 ULONG   STDMETHODCALLTYPE D3D12Device::Release()
 {
 	const std::unique_lock<std::shared_mutex> lock(g_adapter_mutex);
 
-	const ULONG ref = (--_ref);
+	const ULONG ref = InterlockedDecrement(&_ref);
 	if (ref != 0)
 	{
 		_orig->Release();
@@ -267,8 +271,9 @@ HRESULT STDMETHODCALLTYPE D3D12Device::CreateGraphicsPipelineState(const D3D12_G
 	assert(!g_in_d3d12_pipeline_creation);
 	g_in_d3d12_pipeline_creation = true;
 
-	if (ppPipelineState == nullptr || // This can happen when application only wants to validate input parameters
-		riid != __uuidof(ID3D12PipelineState) ||
+	if (ppPipelineState == nullptr || ( // This can happen when application only wants to validate input parameters
+		riid != __uuidof(ID3D12PipelineState) &&
+		riid != __uuidof(ID3D12PipelineState1)) ||
 		!invoke_create_and_init_pipeline_event(*pDesc, *reinterpret_cast<ID3D12PipelineState **>(ppPipelineState), hr, true))
 #endif
 		hr = _orig->CreateGraphicsPipelineState(pDesc, riid, ppPipelineState);
@@ -296,8 +301,9 @@ HRESULT STDMETHODCALLTYPE D3D12Device::CreateComputePipelineState(const D3D12_CO
 	assert(!g_in_d3d12_pipeline_creation);
 	g_in_d3d12_pipeline_creation = true;
 
-	if (ppPipelineState == nullptr || // This can happen when application only wants to validate input parameters
-		riid != __uuidof(ID3D12PipelineState) ||
+	if (ppPipelineState == nullptr || ( // This can happen when application only wants to validate input parameters
+		riid != __uuidof(ID3D12PipelineState) &&
+		riid != __uuidof(ID3D12PipelineState1)) ||
 		!invoke_create_and_init_pipeline_event(*pDesc, *reinterpret_cast<ID3D12PipelineState **>(ppPipelineState), hr, true))
 #endif
 		hr = _orig->CreateComputePipelineState(pDesc, riid, ppPipelineState);
@@ -1182,8 +1188,9 @@ HRESULT STDMETHODCALLTYPE D3D12Device::CreatePipelineState(const D3D12_PIPELINE_
 	assert(!g_in_d3d12_pipeline_creation);
 	g_in_d3d12_pipeline_creation = true;
 
-	if (ppPipelineState == nullptr || // This can happen when application only wants to validate input parameters
-		riid != __uuidof(ID3D12PipelineState) ||
+	if (ppPipelineState == nullptr || ( // This can happen when application only wants to validate input parameters
+		riid != __uuidof(ID3D12PipelineState) &&
+		riid != __uuidof(ID3D12PipelineState1)) ||
 		!invoke_create_and_init_pipeline_event(*pDesc, *reinterpret_cast<ID3D12PipelineState **>(ppPipelineState), hr, true))
 #endif
 		hr = static_cast<ID3D12Device2 *>(_orig)->CreatePipelineState(pDesc, riid, ppPipelineState);
@@ -2322,6 +2329,13 @@ bool D3D12Device::invoke_create_and_init_pipeline_event(const D3D12_STATE_OBJECT
 			depth_stencil_desc = reshade::d3d12::convert_depth_stencil_desc(*static_cast<const D3D12_DEPTH_STENCIL_DESC2 *>(subobject.pDesc));
 			subobjects.push_back({ reshade::api::pipeline_subobject_type::depth_stencil_state, 1, &depth_stencil_desc });
 			break;
+		case D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_SERIALIZED_ROOT_SIGNATURE:
+			// TODO: Replace using 'invoke_create_and_init_pipeline_layout_event'
+			break;
+		case D3D12_STATE_SUBOBJECT_TYPE_LOCAL_SERIALIZED_ROOT_SIGNATURE:
+			break;
+		case D3D12_STATE_SUBOBJECT_TYPE_COMPILER_EXISITING_COLLECTION:
+			break;
 		default:
 			// Unknown sub-object type
 			assert(false);
@@ -2585,6 +2599,10 @@ bool D3D12Device::invoke_create_and_init_pipeline_event(const D3D12_PIPELINE_STA
 			rasterizer_desc = reshade::d3d12::convert_rasterizer_desc(reinterpret_cast<const D3D12_PIPELINE_STATE_STREAM_RASTERIZER2 *>(p)->data);
 			subobjects.push_back({ reshade::api::pipeline_subobject_type::rasterizer_state, 1, &rasterizer_desc });
 			p += sizeof(D3D12_PIPELINE_STATE_STREAM_RASTERIZER2);
+			continue;
+		case D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SERIALIZED_ROOT_SIGNATURE:
+			// TODO: Replace using 'invoke_create_and_init_pipeline_layout_event'
+			p += sizeof(D3D12_PIPELINE_STATE_STREAM_SERIALIZED_ROOT_SIGNATURE);
 			continue;
 		default:
 			// Unknown sub-object type, break out of the loop

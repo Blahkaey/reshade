@@ -504,11 +504,11 @@ void reshade::opengl::device_context_impl::bind_pipeline(api::pipeline_stage sta
 		{
 			gl.Enable(GL_STENCIL_TEST);
 			gl.StencilMaskSeparate(GL_FRONT, pipeline_object->front_stencil_write_mask);
+			gl.StencilFuncSeparate(GL_FRONT, pipeline_object->front_stencil_func, static_cast<GLint>(pipeline_object->front_stencil_reference_value), pipeline_object->front_stencil_read_mask);
+			gl.StencilOpSeparate(GL_FRONT, pipeline_object->front_stencil_fail_op, pipeline_object->front_stencil_depth_fail_op, pipeline_object->front_stencil_pass_op);
 			gl.StencilMaskSeparate(GL_BACK, pipeline_object->back_stencil_write_mask);
-			gl.StencilOpSeparate(GL_FRONT, pipeline_object->front_stencil_op_fail, pipeline_object->front_stencil_op_depth_fail, pipeline_object->front_stencil_op_pass);
-			gl.StencilOpSeparate(GL_BACK, pipeline_object->back_stencil_op_fail, pipeline_object->back_stencil_op_depth_fail, pipeline_object->back_stencil_op_pass);
-			gl.StencilFuncSeparate(GL_FRONT, pipeline_object->front_stencil_func, pipeline_object->front_stencil_reference_value, pipeline_object->front_stencil_read_mask);
-			gl.StencilFuncSeparate(GL_BACK, pipeline_object->back_stencil_func, pipeline_object->back_stencil_reference_value, pipeline_object->back_stencil_read_mask);
+			gl.StencilFuncSeparate(GL_BACK, pipeline_object->back_stencil_func, static_cast<GLint>(pipeline_object->back_stencil_reference_value), pipeline_object->back_stencil_read_mask);
+			gl.StencilOpSeparate(GL_BACK, pipeline_object->back_stencil_fail_op, pipeline_object->back_stencil_depth_fail_op, pipeline_object->back_stencil_pass_op);
 		}
 		else
 		{
@@ -1642,8 +1642,33 @@ void reshade::opengl::device_context_impl::copy_texture_region(api::resource src
 		const GLenum copy_depth = is_depth_stencil_format(src_desc.texture.format);
 		assert(copy_depth != GL_STENCIL_ATTACHMENT && is_depth_stencil_format(dst_desc.texture.format) == copy_depth);
 
-		bind_framebuffer_with_resource(GL_READ_FRAMEBUFFER, copy_depth != GL_NONE ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, src, src_subresource, src_desc);
-		bind_framebuffer_with_resource(GL_DRAW_FRAMEBUFFER, copy_depth != GL_NONE ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, dst, dst_subresource, dst_desc);
+		if (src_target == GL_FRAMEBUFFER_DEFAULT)
+		{
+			if (0 != prev_read_binding)
+				gl.BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+			gl.ReadBuffer(src_object);
+		}
+		else
+		{
+			bind_framebuffer_with_resource(GL_READ_FRAMEBUFFER, copy_depth != GL_NONE ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, src, src_subresource, src_desc);
+
+			gl.ReadBuffer(GL_COLOR_ATTACHMENT0);
+		}
+
+		if (dst_target == GL_FRAMEBUFFER_DEFAULT)
+		{
+			if (0 != prev_draw_binding)
+				gl.BindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+			gl.DrawBuffer(dst_object);
+		}
+		else
+		{
+			bind_framebuffer_with_resource(GL_DRAW_FRAMEBUFFER, copy_depth != GL_NONE ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, dst, dst_subresource, dst_desc);
+
+			gl.DrawBuffer(GL_COLOR_ATTACHMENT0);
+		}
 
 		if (prev_scissor_test)
 			gl.Disable(GL_SCISSOR_TEST);

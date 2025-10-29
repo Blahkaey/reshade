@@ -1314,6 +1314,7 @@ IMPLEMENT_INTRINSIC_HLSL(ddx_coarse, 0, {
 	code += (_shader_model >= 50 ? "ddx_coarse(" : "ddx(") + id_to_name(args[0].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_SPIRV(ddx_coarse, 0, {
+	add_capability(spv::CapabilityDerivativeControl);
 	return
 	add_instruction(spv::OpDPdxCoarse, convert_type(res_type))
 		.add(args[0].base);
@@ -1331,6 +1332,7 @@ IMPLEMENT_INTRINSIC_HLSL(ddx_fine, 0, {
 	code += (_shader_model >= 50 ? "ddx_fine(" : "ddx(") + id_to_name(args[0].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_SPIRV(ddx_fine, 0, {
+	add_capability(spv::CapabilityDerivativeControl);
 	return
 	add_instruction(spv::OpDPdxFine, convert_type(res_type))
 		.add(args[0].base);
@@ -1365,6 +1367,7 @@ IMPLEMENT_INTRINSIC_HLSL(ddy_coarse, 0, {
 	code += (_shader_model >= 50 ? "ddy_coarse(" : "ddy(") + id_to_name(args[0].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_SPIRV(ddy_coarse, 0, {
+	add_capability(spv::CapabilityDerivativeControl);
 	return
 	add_instruction(spv::OpDPdyCoarse, convert_type(res_type))
 		.add(args[0].base);
@@ -1382,6 +1385,7 @@ IMPLEMENT_INTRINSIC_HLSL(ddy_fine, 0, {
 	code += (_shader_model >= 50 ? "ddy_fine(" : "ddy(") + id_to_name(args[0].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_SPIRV(ddy_fine, 0, {
+	add_capability(spv::CapabilityDerivativeControl);
 	return
 	add_instruction(spv::OpDPdyFine, convert_type(res_type))
 		.add(args[0].base);
@@ -1572,10 +1576,10 @@ DEFINE_INTRINSIC(refract, 0, float2, float2, float2, float)
 DEFINE_INTRINSIC(refract, 0, float3, float3, float3, float)
 DEFINE_INTRINSIC(refract, 0, float4, float4, float4, float)
 IMPLEMENT_INTRINSIC_GLSL(refract, 0, {
-	code += "refract(" + id_to_name(args[0].base) + ", " + id_to_name(args[1].base) + ", " + id_to_name(args[1].base) + ')';
+	code += "refract(" + id_to_name(args[0].base) + ", " + id_to_name(args[1].base) + ", " + id_to_name(args[2].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_HLSL(refract, 0, {
-	code += "refract(" + id_to_name(args[0].base) + ", " + id_to_name(args[1].base) + ", " + id_to_name(args[1].base) + ')';
+	code += "refract(" + id_to_name(args[0].base) + ", " + id_to_name(args[1].base) + ", " + id_to_name(args[2].base) + ')';
 	})
 IMPLEMENT_INTRINSIC_SPIRV(refract, 0, {
 	return
