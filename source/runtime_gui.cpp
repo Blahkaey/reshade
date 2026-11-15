@@ -803,7 +803,8 @@ void reshade::runtime::draw_gui()
 	if (show_overlay != _show_overlay)
 		open_overlay(show_overlay, show_overlay_source);
 
-	const bool show_splash_window = _show_splash && (is_loading() || (_reload_count <= 1 && (_last_present_time - _last_reload_time) < std::chrono::seconds(5)) || (!_show_overlay && _tutorial_index == 0 && _input != nullptr));
+	// PartyDeck: the splash bar is never drawn.
+	const bool show_splash_window = false;
 
 	// Do not show this message in the same frame the screenshot is taken (so that it won't show up on the GUI screenshot)
 	const bool show_screenshot_message = (_show_screenshot_message || !_last_screenshot_save_successful) && !_should_save_screenshot && (_last_present_time - _last_screenshot_time) < std::chrono::seconds(_last_screenshot_save_successful ? 3 : 5);
